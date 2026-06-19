@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>دعوة تخرج</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   1. RESET & BASE
+   ============================================================ */
+:root{
+  --navy-top:#0B1026;
+  --navy-bottom:#1A2347;
+  --gold:#E8C57E;
+  --off-white:#F5F1E8;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{
+  margin:0; padding:0;
+  width:100%;
+  overflow-x:hidden;
+  background:linear-gradient(180deg,var(--navy-top),var(--navy-bottom));
+  font-family:'Tajawal',sans-serif;
+  color:var(--off-white);
+  scroll-behavior:smooth;
+  overscroll-behavior-y:none;
+}
+body{ position:relative; min-height:100vh; }
+section{
+  position:relative;
+  min-height:100svh;
+  min-height:100dvh;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:8vh 6vw;
+  overflow:hidden;
+}
+#bg-canvas{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:0; pointer-events:none;
+}
+.content{ position:relative; z-index:2; max-width:600px; width:100%; }
+
+/* ============================================================
+   2. SCENE 0 — ENVELOPE
+   ============================================================ */
+#scene-envelope{
+  position:fixed; inset:0; z-index:50;
+  background:linear-gradient(180deg,var(--navy-top),var(--navy-bottom));
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity 1s ease, visibility 1s ease;
+}
+#scene-envelope.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+.envelope-wrap{
+  perspective:1200px;
+  width:78vw; max-width:340px;
+  display:flex; flex-direction:column; align-items:center; gap:28px;
+}
+.envelope{
+  position:relative;
+  width:100%;
+  aspect-ratio:1.5/1;
+  cursor:pointer;
+}
+.envelope-body{
+  position:absolute; inset:0;
+  background:linear-gradient(160deg,#1A2347,#0B1026);
+  border:1px solid rgba(232,197,126,.35);
+  border-radius:6px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+}
+.envelope-flap{
+  position:absolute; top:0; left:0; right:0; height:55%;
+  background:linear-gradient(200deg,#212c54,#141a35);
+  clip-path:polygon(0 0,100% 0,50% 90%);
+  border-radius:6px 6px 0 0;
+  transform-origin:top center;
+  transition:transform 1.4s cubic-bezier(.6,.05,.2,1);
+  z-index:3;
+  border:1px solid rgba(232,197,126,.35);
+  border-bottom:none;
+}
+.envelope.open .envelope-flap{ transform:rotateX(170deg); }
+.seal{
+  position:absolute; top:42%; left:50%;
+  width:54px; height:54px;
+  transform:translate(-50%,-50%) scale(1);
+  background:radial-gradient(circle at 35% 30%, #f3d999, var(--gold) 60%, #b3893f);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+  z-index:5;
+  transition:transform .25s ease, opacity .5s ease;
+}
+.envelope.pressed .seal{ transform:translate(-50%,-50%) scale(.85); }
+.envelope.open .seal{ opacity:0; transform:translate(-50%,-50%) scale(.4); }
+.card-peek{
+  position:absolute; left:6%; right:6%; bottom:6%; top:18%;
+  background:linear-gradient(180deg,#10153080,#1A234780);
+  border:1px solid rgba(232,197,126,.25);
+  border-radius:4px;
+  transform:translateY(0);
+  transition:transform 1.6s cubic-bezier(.3,.05,.15,1) .15s;
+  z-index:2;
+}
+.envelope.open .card-peek{ transform:translateY(-145%); }
+.envelope-hint{
+  font-size:.95rem; letter-spacing:.5px; color:var(--gold);
+  opacity:.85;
+  animation:pulse-hint 2.6s ease-in-out infinite;
+}
+@keyframes pulse-hint{ 0%,100%{opacity:.45;} 50%{opacity:1;} }
+
+/* meteors */
+.meteor{
+  position:absolute; width:2px; height:90px;
+  background:linear-gradient(180deg, var(--gold), transparent);
+  border-radius:2px;
+  opacity:0;
+  pointer-events:auto;
+  z-index:60;
+}
+.meteor.fly{
+  animation:meteor-fly 1.8s ease-in forwards;
+}
+@keyframes meteor-fly{
+  0%{ opacity:0; transform:translate(0,0) rotate(35deg) scale(.7); }
+  10%{ opacity:1; }
+  85%{ opacity:.85; }
+  100%{ opacity:0; transform:translate(220px,420px) rotate(35deg) scale(1); }
+}
+
+/* ============================================================
+   3. SHARED TEXT STYLES
+   ============================================================ */
+.title-lg{ font-size:clamp(1.6rem,7vw,2.4rem); font-weight:900; color:var(--off-white); margin:0 0 .6em; }
+.title-gold{ color:var(--gold); }
+.subtitle{ font-size:clamp(1rem,4vw,1.2rem); font-weight:400; color:var(--off-white); opacity:.85; line-height:1.9; margin:0; }
+.soft{ opacity:.75; font-weight:300; }
+
+/* fade-up reveal utility, driven by JS adding .in-view */
+.reveal{ opacity:0; transform:translateY(28px); transition:opacity 1s ease, transform 1s ease; }
+.reveal.in-view{ opacity:1; transform:translateY(0); }
+.reveal.d1.in-view{ transition-delay:.15s; }
+.reveal.d2.in-view{ transition-delay:.3s; }
+.reveal.d3.in-view{ transition-delay:.45s; }
+
+/* ============================================================
+   4. SCENE 1 — CONSTELLATION
+   ============================================================ */
+#scene-occasion .const-wrap{ width:100%; max-width:380px; margin:10px auto 0; }
+#const-svg{ width:100%; height:auto; overflow:visible; }
+.const-line{
+  fill:none; stroke:var(--gold); stroke-width:1.4;
+  stroke-linecap:round;
+  filter:drop-shadow(0 0 3px rgba(232,197,126,.6));
+}
+.const-star{
+  fill:var(--gold);
+  filter:drop-shadow(0 0 4px rgba(232,197,126,.8));
+  opacity:0;
+  transition:opacity .6s ease;
+  cursor:pointer;
+}
+.const-star.show{ opacity:1; }
+.const-label{ fill:var(--off-white); font-size:11px; font-family:'Tajawal'; opacity:.7; }
+
+/* ============================================================
+   5. SCENE 2 — NAME
+   ============================================================ */
+.name-letters{ display:inline-block; direction:rtl; unicode-bidi:plain-text; }
+.name-letters span{
+  display:inline-block;
+  opacity:0; transform:translateY(14px);
+  transition:opacity .6s ease, transform .6s ease;
+  text-shadow:0 0 18px rgba(232,197,126,.55);
+}
+.name-letters span.show{ opacity:1; transform:translateY(0); }
+#scene-name h1{ font-size:clamp(2rem,9vw,3rem); color:var(--gold); font-weight:900; margin:0 0 .5em; }
+
+/* ============================================================
+   6. SCENE 4 — MAP
+   ============================================================ */
+.map-card{
+  width:100%; max-width:380px; aspect-ratio:1/1; margin:0 auto;
+  border-radius:18px; position:relative; overflow:hidden;
+  background:radial-gradient(circle at 50% 40%, #1c2654, #0b1026 80%);
+  border:1px solid rgba(232,197,126,.25);
+  cursor:pointer;
+}
+.map-grid{ position:absolute; inset:0; opacity:.25;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(232,197,126,.25) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, rgba(232,197,126,.25) 0 1px, transparent 1px 40px);
+}
+.map-pin{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-100%);
+  width:26px; height:26px;
+}
+.map-pin svg{ width:100%; height:100%; filter:drop-shadow(0 0 8px rgba(232,197,126,.8)); }
+.map-pulse{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:14px; height:14px; border-radius:50%;
+  background:rgba(232,197,126,.5);
+  animation:pin-pulse 2.4s ease-out infinite;
+}
+@keyframes pin-pulse{
+  0%{ transform:translate(-50%,-50%) scale(.3); opacity:.9; }
+  100%{ transform:translate(-50%,-50%) scale(3.2); opacity:0; }
+}
+.btn-gold{
+  margin-top:22px;
+  display:inline-block;
+  background:linear-gradient(160deg,#f3d999,var(--gold));
+  color:#1A2347;
+  font-family:'Tajawal'; font-weight:700; font-size:.95rem;
+  padding:.85em 2em;
+  border:none; border-radius:999px;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(232,197,126,.3);
+  transition:transform .25s ease, box-shadow .25s ease;
+}
+.btn-gold:active{ transform:scale(.95); }
+
+/* ============================================================
+   7. SCENE 5 — COUNTDOWN
+   ============================================================ */
+.countdown-grid{
+  display:flex; gap:14px; justify-content:center; margin:18px 0 8px;
+  flex-wrap:wrap;
+}
+.cd-box{
+  background:rgba(232,197,126,.08);
+  border:1px solid rgba(232,197,126,.3);
+  border-radius:14px;
+  width:70px; padding:14px 0;
+}
+.cd-num{ font-size:1.6rem; font-weight:700; color:var(--gold); display:block; }
+.cd-label{ font-size:.7rem; opacity:.75; margin-top:4px; display:block; }
+.closing-line{
+  margin-top:50px;
+  font-size:1.1rem;
+  color:var(--gold);
+  opacity:.85;
+  letter-spacing:.5px;
+}
+
+/* ============================================================
+   8. REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  html{ scroll-behavior:auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- background canvas for ambient particles + bursts -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ============================================================
+     SCENE 0: ENVELOPE INTRO
+     ============================================================ -->
+<div id="scene-envelope">
+  <div class="envelope-wrap">
+    <div class="envelope" id="envelope">
+      <div class="card-peek"></div>
+      <div class="envelope-body"></div>
+      <div class="envelope-flap"></div>
+      <div class="seal">🎓</div>
+    </div>
+    <div class="envelope-hint">المسي لفتح الدعوة</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCENE 1: THE OCCASION / CONSTELLATION
+     ============================================================ -->
+<section id="scene-occasion">
+  <div class="content">
+    <h2 class="title-lg reveal" id="occasion-title"></h2>
+    <div class="const-wrap reveal d1">
+      <svg id="const-svg" viewBox="0 0 320 170"></svg>
+    </div>
+    <p class="subtitle reveal d2" id="constellation-line"></p>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 2: GRADUATE NAME
+     ============================================================ -->
+<section id="scene-name">
+  <div class="content">
+    <h1 id="grad-name"><span class="name-letters" id="name-letters"></span></h1>
+    <p class="subtitle reveal d2" id="major-college"></p>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 3: INVITATION PHRASE
+     ============================================================ -->
+<section id="scene-invite">
+  <div class="content">
+    <p class="title-lg reveal" id="invite-phrase" style="font-weight:500;"></p>
+    <p class="subtitle soft reveal d2" id="invite-quote"></p>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 4: LOCATION MAP
+     ============================================================ -->
+<section id="scene-map">
+  <div class="content">
+    <h2 class="title-lg reveal title-gold">الموقع</h2>
+    <div class="map-card reveal d1" id="map-card">
+      <div class="map-grid"></div>
+      <div class="map-pulse"></div>
+      <div class="map-pin">
+        <svg viewBox="0 0 24 24"><path fill="#E8C57E" d="M12 2C7.6 2 4 5.6 4 10c0 5.4 6.6 11.2 7.3 11.8.4.4 1 .4 1.4 0C13.4 21.2 20 15.4 20 10c0-4.4-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+      </div>
+    </div>
+    <p class="subtitle reveal d2" id="venue-name"></p>
+    <button class="btn-gold reveal d3" id="add-calendar-btn">أضف للتقويم</button>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 5: COUNTDOWN
+     ============================================================ -->
+<section id="scene-countdown">
+  <div class="content">
+    <h2 class="title-lg reveal title-gold">العد التنازلي</h2>
+    <div class="countdown-grid reveal d1">
+      <div class="cd-box"><span class="cd-num" id="cd-days">00</span><span class="cd-label">أيام</span></div>
+      <div class="cd-box"><span class="cd-num" id="cd-hours">00</span><span class="cd-label">ساعات</span></div>
+      <div class="cd-box"><span class="cd-num" id="cd-mins">00</span><span class="cd-label">دقائق</span></div>
+      <div class="cd-box"><span class="cd-num" id="cd-secs">00</span><span class="cd-label">ثواني</span></div>
+    </div>
+    <p class="subtitle reveal d2" id="event-date-display"></p>
+    <p class="closing-line reveal d3" id="closing-line"></p>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   SECTION A: CONFIG — edit this object to reuse the template
+   ============================================================ */
+const CONFIG = {
+  graduateName: "نورة العتيبي",
+  major: "علوم الحاسب",
+  college: "الكلية الصناعية بينبع",
+  occasionTitle: "تمّ بحمدِ الله",
+  constellationLine: "اجتمعت النجوم لتحتفل بكِ",
+  invitationPhrase: "يسعدني أن تشاركوني فرحتي، ويشرّفني حضوركم",
+  quote: "وقل ربِّ زدني علمًا",
+  closingLine: "باقٍ على اللقاء…",
+  eventDateTimeISO: "2026-07-15T19:00:00+03:00",
+  eventDateDisplay: "١٥ يوليو ٢٠٢٦ — ٧:٠٠ مساءً",
+  venueName: "قاعة الاحتفالات الكبرى، الكلية الصناعية بينبع",
+  mapLat: 24.0895,
+  mapLng: 38.0618,
+  codeSymbol: "</>",
+  colors: {
+    navyTop: "#0B1026",
+    navyBottom: "#1A2347",
+    gold: "#E8C57E",
+    offWhite: "#F5F1E8"
+  }
+};
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   SECTION B: RENDER — push CONFIG content into the DOM
+   ============================================================ */
+function render(){
+  document.getElementById('occasion-title').textContent = CONFIG.occasionTitle;
+  document.getElementById('constellation-line').textContent = CONFIG.constellationLine;
+  document.getElementById('major-college').textContent = `${CONFIG.major} — ${CONFIG.college}`;
+  document.getElementById('invite-phrase').textContent = CONFIG.invitationPhrase;
+  document.getElementById('invite-quote').textContent = CONFIG.quote;
+  document.getElementById('venue-name').textContent = CONFIG.venueName;
+  document.getElementById('event-date-display').textContent = CONFIG.eventDateDisplay;
+  document.getElementById('closing-line').textContent = CONFIG.closingLine;
+
+  // name letter-by-letter
+  const wrap = document.getElementById('name-letters');
+  wrap.innerHTML = '';
+  [...CONFIG.graduateName].forEach((ch,i)=>{
+    const span = document.createElement('span');
+    span.textContent = ch;
+    span.style.transitionDelay = (i*0.045)+'s';
+    wrap.appendChild(span);
+  });
+
+  // theme colors -> CSS variables (in case CONFIG.colors is edited)
+  const r = document.documentElement.style;
+  r.setProperty('--navy-top', CONFIG.colors.navyTop);
+  r.setProperty('--navy-bottom', CONFIG.colors.navyBottom);
+  r.setProperty('--gold', CONFIG.colors.gold);
+  r.setProperty('--off-white', CONFIG.colors.offWhite);
+
+  buildConstellation();
+}
+
+/* Build the two constellations: graduation cap + code symbol */
+function buildConstellation(){
+  const svg = document.getElementById('const-svg');
+  svg.innerHTML = '';
+
+  // star coordinate sets (hand placed, simple stylised shapes)
+  const capStars = [
+    [40,60],[70,40],[100,60],[70,75],[40,100],[100,100],[55,115],[85,115]
+  ];
+  const capLines = [[0,1],[1,2],[2,3],[3,0],[3,4],[3,5],[4,6],[5,7],[6,7]];
+
+  const codeStars = [
+    [200,45],[185,70],[200,95],[225,45],[240,70],[225,95],[210,105],[215,35]
+  ];
+  const codeLines = [[0,1],[1,2],[3,4],[4,5],[6,7]];
+
+  const allStars = [...capStars, ...codeStars];
+  const allLines = [
+    ...capLines,
+    ...codeLines.map(l=>[l[0]+capStars.length, l[1]+capStars.length])
+  ];
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // lines first (drawn under stars)
+  allLines.forEach((pair,i)=>{
+    const [a,b] = pair;
+    const p1 = allStars[a], p2 = allStars[b];
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',p1[0]); line.setAttribute('y1',p1[1]);
+    line.setAttribute('x2',p2[0]); line.setAttribute('y2',p2[1]);
+    line.classList.add('const-line');
+    const len = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+    line.style.strokeDasharray = len;
+    line.style.strokeDashoffset = reducedMotion ? 0 : len;
+    line.style.transition = `stroke-dashoffset 0.7s ease ${0.5 + i*0.08}s`;
+    svg.appendChild(line);
+  });
+
+  // stars
+  allStars.forEach((p,i)=>{
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('cx',p[0]); c.setAttribute('cy',p[1]); c.setAttribute('r',3.2);
+    c.classList.add('const-star');
+    c.style.transitionDelay = (i*0.05)+'s';
+    c.addEventListener('pointerdown', ()=>{
+      twinkle(c);
+      burstAt(svgPointToScreen(svg, p[0], p[1]));
+    });
+    svg.appendChild(c);
+  });
+
+  // labels
+  const capLabel = document.createElementNS(ns,'text');
+  capLabel.setAttribute('x',70); capLabel.setAttribute('y',135);
+  capLabel.setAttribute('text-anchor','middle');
+  capLabel.classList.add('const-label');
+  capLabel.textContent = 'التخرج';
+  svg.appendChild(capLabel);
+
+  const codeLabel = document.createElementNS(ns,'text');
+  codeLabel.setAttribute('x',212); codeLabel.setAttribute('y',135);
+  codeLabel.setAttribute('text-anchor','middle');
+  codeLabel.classList.add('const-label');
+  codeLabel.textContent = CONFIG.codeSymbol;
+  svg.appendChild(codeLabel);
+
+  // cap-toss interaction: tap whole svg near cap shape triggers a toss burst
+  svg.addEventListener('pointerdown', (e)=>{
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * 320;
+    const y = (e.clientY - rect.top) / rect.height * 170;
+    if (x < 130) { // roughly the cap region
+      capToss();
+    }
+  });
+
+  this._constSvg = svg;
+  this._constStars = svg.querySelectorAll('.const-star');
+  this._constLines = svg.querySelectorAll('.const-line');
+}
+
+function svgPointToScreen(svg, x, y){
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: rect.left + (x/320)*rect.width,
+    y: rect.top + (y/170)*rect.height
+  };
+}
+
+function twinkle(el){
+  el.style.transform = 'scale(1.8)';
+  setTimeout(()=> el.style.transform = 'scale(1)', 250);
+}
+
+function capToss(){
+  const rect = document.getElementById('const-svg').getBoundingClientRect();
+  burstAt({ x: rect.left + rect.width*0.22, y: rect.top + rect.height*0.4 }, 22);
+}
+
+function revealConstellation(){
+  const svg = document.getElementById('const-svg');
+  if(!svg) return;
+  svg.querySelectorAll('.const-line').forEach(l=> l.style.strokeDashoffset = 0);
+  svg.querySelectorAll('.const-star').forEach(s=> s.classList.add('show'));
+}
+
+/* ============================================================
+   SECTION C: SCROLL — IntersectionObserver reveals
+   ============================================================ */
+function initScrollReveal(){
+  const targets = document.querySelectorAll('.reveal');
+  if (reducedMotion){
+    targets.forEach(t=>t.classList.add('in-view'));
+    revealConstellation();
+    document.querySelectorAll('.name-letters span').forEach(s=>s.classList.add('show'));
+    return;
+  }
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if (entry.isIntersecting){
+        entry.target.classList.add('in-view');
+        if (entry.target.id === 'occasion-title'){
+          setTimeout(revealConstellation, 150);
+        }
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold:0.35 });
+  targets.forEach(t=> io.observe(t));
+
+  // name letters own observer
+  const nameObs = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if (entry.isIntersecting){
+        entry.target.querySelectorAll('span').forEach(s=> s.classList.add('show'));
+        nameObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold:0.4 });
+  nameObs.observe(document.getElementById('name-letters'));
+}
+
+/* ============================================================
+   SECTION D: PARALLAX — depth-layered star drift on scroll
+   ============================================================ */
+let lastScrollY = 0, ticking = false;
+function initParallax(){
+  if (reducedMotion) return;
+  window.addEventListener('scroll', ()=>{
+    lastScrollY = window.scrollY;
+    if (!ticking){
+      ticking = true;
+      requestAnimationFrame(()=>{
+        applyParallax(lastScrollY);
+        ticking = false;
+      });
+    }
+  }, { passive:true });
+}
+function applyParallax(y){
+  // depth offsets applied to ambient particle layers via canvas state (see particles section)
+  parallaxOffset = y * 0.04;
+}
+let parallaxOffset = 0;
+
+/* ============================================================
+   SECTION E: PARTICLES — single canvas, ambient + bursts
+   ============================================================ */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, DPR;
+let ambientParticles = [];
+let burstParticles = [];
+
+function resizeCanvas(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+function initAmbient(){
+  const count = reducedMotion ? 18 : 38;
+  ambientParticles = Array.from({length:count}, ()=>({
+    x: Math.random()*W,
+    y: Math.random()*H,
+    r: Math.random()*1.6 + 0.5,
+    depth: Math.random()*0.6 + 0.2, // affects parallax + drift speed
+    speed: Math.random()*0.15 + 0.04,
+    phase: Math.random()*Math.PI*2,
+    baseAlpha: Math.random()*0.4 + 0.25
+  }));
+}
+
+function burstAt(point, count=14){
+  if (reducedMotion) return;
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = Math.random()*2 + 0.6;
+    burstParticles.push({
+      x: point.x, y: point.y,
+      vx: Math.cos(angle)*speed,
+      vy: Math.sin(angle)*speed - 0.6,
+      life: 1,
+      r: Math.random()*2 + 1
+    });
+  }
+}
+
+function drawFrame(){
+  ctx.clearRect(0,0,W,H);
+
+  // ambient particles, slow upward drift + parallax depth offset
+  const t = performance.now() * 0.0006;
+  ambientParticles.forEach(p=>{
+    const driftY = (p.y - (t*20*p.speed) % H + H) % H;
+    const offsetY = (driftY - parallaxOffset*p.depth + H*2) % H;
+    const flicker = p.baseAlpha + Math.sin(t*2 + p.phase)*0.12;
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(232,197,126,${Math.max(0,flicker)})`;
+    ctx.arc(p.x, offsetY, p.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // burst particles
+  burstParticles.forEach(p=>{
+    p.x += p.vx; p.y += p.vy; p.vy += 0.025; p.life -= 0.02;
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(232,197,126,${Math.max(0,p.life)})`;
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+  burstParticles = burstParticles.filter(p=>p.life>0);
+
+  requestAnimationFrame(drawFrame);
+}
+
+function initParticles(){
+  resizeCanvas();
+  initAmbient();
+  window.addEventListener('resize', ()=>{ resizeCanvas(); initAmbient(); }, { passive:true });
+  requestAnimationFrame(drawFrame);
+}
+
+/* ============================================================
+   SECTION F: INTERACTIONS — envelope, meteors, map, calendar
+   ============================================================ */
+function initEnvelope(){
+  const envelope = document.getElementById('envelope');
+  const sceneEnvelope = document.getElementById('scene-envelope');
+  let opened = false;
+
+  envelope.addEventListener('pointerdown', ()=>{
+    if (opened) return;
+    envelope.classList.add('pressed');
+  });
+  envelope.addEventListener('pointerup', ()=>{
+    if (opened) return;
+    opened = true;
+    setTimeout(()=>{
+      envelope.classList.remove('pressed');
+      envelope.classList.add('open');
+      spawnMeteors();
+      setTimeout(()=>{
+        sceneEnvelope.classList.add('hidden');
+        document.body.style.overflow = '';
+      }, reducedMotion ? 300 : 1700);
+    }, 120);
+  });
+}
+
+function spawnMeteors(){
+  if (reducedMotion) return;
+  const count = 3;
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const m = document.createElement('div');
+      m.className = 'meteor fly';
+      m.style.left = (15 + Math.random()*40) + 'vw';
+      m.style.top = (5 + Math.random()*15) + 'vh';
+      document.getElementById('scene-envelope').appendChild(m);
+      m.addEventListener('pointerdown', (e)=>{
+        e.stopPropagation();
+        const rect = m.getBoundingClientRect();
+        burstAt({x: rect.left, y: rect.top}, 16);
+        m.style.opacity = '0';
+      });
+      m.addEventListener('animationend', ()=> m.remove());
+    }, i*450);
+  }
+}
+
+function initMap(){
+  const mapCard = document.getElementById('map-card');
+  mapCard.addEventListener('pointerdown', ()=>{
+    const url = `https://www.google.com/maps/search/?api=1&query=${CONFIG.mapLat},${CONFIG.mapLng}`;
+    window.open(url, '_blank');
+  });
+}
+
+function initCalendar(){
+  const btn = document.getElementById('add-calendar-btn');
+  btn.addEventListener('pointerdown', (e)=>{
+    e.stopPropagation();
+    const start = new Date(CONFIG.eventDateTimeISO);
+    const end = new Date(start.getTime() + 2*60*60*1000);
+    const fmt = (d)=> d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    const params = new URLSearchParams({
+      action:'TEMPLATE',
+      text:`حفل تخرج ${CONFIG.graduateName}`,
+      dates:`${fmt(start)}/${fmt(end)}`,
+      location: CONFIG.venueName,
+      details: CONFIG.invitationPhrase
+    });
+    window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
+  });
+}
+
+function initNameSparkle(){
+  document.getElementById('grad-name').addEventListener('pointerdown', (e)=>{
+    burstAt({x:e.clientX, y:e.clientY}, 10);
+  });
+}
+
+/* ============================================================
+   SECTION G: COUNTDOWN
+   ============================================================ */
+function initCountdown(){
+  const target = new Date(CONFIG.eventDateTimeISO).getTime();
+  const elDays = document.getElementById('cd-days');
+  const elHours = document.getElementById('cd-hours');
+  const elMins = document.getElementById('cd-mins');
+  const elSecs = document.getElementById('cd-secs');
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function tick(){
+    const diff = target - Date.now();
+    if (diff <= 0){
+      elDays.textContent = elHours.textContent = elMins.textContent = elSecs.textContent = '00';
+      clearInterval(timer);
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    elDays.textContent = pad(days);
+    elHours.textContent = pad(hours);
+    elMins.textContent = pad(mins);
+    elSecs.textContent = pad(secs);
+  }
+  tick();
+  const timer = setInterval(tick, 1000);
+}
+
+/* ============================================================
+   SECTION H: INIT
+   ============================================================ */
+document.body.style.overflow = 'hidden';
+render();
+initParticles();
+initScrollReveal();
+initParallax();
+initEnvelope();
+initMap();
+initCalendar();
+initNameSparkle();
+initCountdown();
+</script>
+</body>
+</html>
